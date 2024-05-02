@@ -1,6 +1,16 @@
 <template>
   <v-container>
-    <h1>Homepage</h1>
+    <v-card>
+      <v-card-title v-for="item in radios" :key="item.name">
+        {{ item.name }}
+      </v-card-title>
+      <v-card-text v-for="item in radios" :key="item.tags">
+        {{ item.tags }}
+      </v-card-text>
+      <v-card-item v-for="item in radios" :key="item.favicon">
+        {{ item.favicon }}
+      </v-card-item>
+    </v-card>
   </v-container>
 </template>
 
@@ -12,7 +22,6 @@ export default {
   data() {
     return {
       radios: [],
-
     }
   },
   methods: {
@@ -23,7 +32,10 @@ export default {
           this.radios = data;
           console.log(data);
         });
+    },
 
+    saveInLocalStorage() {
+      localStorage.setItem('radios', JSON.stringify(this.radios));
     },
   },
   created() {
