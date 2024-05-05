@@ -9,6 +9,9 @@
   },
   "dependencies": {
     "core-js": "^3.8.3",
+    "globe.gl": "^2.32.4",
+    "hls.js": "^1.5.8",
+    "three": "^0.164.1",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3",
     "vuetify": "^3.5.17"
