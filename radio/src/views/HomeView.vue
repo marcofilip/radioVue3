@@ -1,6 +1,6 @@
 <template>
 
-  <v-container fluid style="padding-left: 100px; padding-right: 100px">
+  <v-container fluid style="padding-left: 100px; padding-right:100px">
 
     <!-- Titolo -->
     <v-row class="justify-center">
@@ -26,8 +26,6 @@
         placeholder="Scrivi un tag..."></v-combobox>
 
     </v-row>
-
-
 
     <!-- Radio -->
     <v-row>
@@ -80,6 +78,7 @@
       </v-col>
 
     </v-row>
+
   </v-container>
 </template>
 
