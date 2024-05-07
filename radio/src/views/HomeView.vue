@@ -133,7 +133,6 @@ export default {
       radios: [],
       isPlaying: false,
       activeRadio: null,
-      currentLocation: null,
       favoriteRadios: [],
       tagfilterRadios: [],
       showFilter: "all",
@@ -151,7 +150,7 @@ export default {
         return;
       }
 
-      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=200&countrycode=IT&hidebroken=true&order=clickcount&reverse=true')
+      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=200&hidebroken=true&order=clickcount&reverse=true')
         .then(response => response.json())
         .then(data => {
           this.radios = data;
@@ -178,9 +177,6 @@ export default {
       const url = item.url;
       const audioFormat = this.getAudioFormat(url);
       console.log(audioFormat);
-
-      //in questo momento non mi serve, per non sprecare chiamate API
-      //this.getLocation(item.state);
 
       if (audioFormat.startsWith('it:8000')) {
         alert("Il formato 'it:8000' non è supportato");
@@ -214,26 +210,7 @@ export default {
       this.activeRadio = null;
     },
 
-    getLocation(state) {
-
-      fetch('https://api.api-ninjas.com/v1/geocoding?city=' + state, {
-        headers: { 'X-Api-Key': process.env.VUE_APP_GEOCODING_API_KEY }
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(result => {
-          this.currentLocation = { latitude: result[0].latitude, longitude: result[0].longitude };
-          console.log(this.currentLocation);
-        })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-
-    },
+    
 
     isFavorite(radio) {
       return this.favoriteRadios.some(favRadio => favRadio.name === radio.name);
