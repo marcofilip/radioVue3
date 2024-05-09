@@ -141,7 +141,7 @@ export default {
   },
 
   methods: {
-
+    
     getRadios() {
 
       if (localStorage.getItem('radios')) {
@@ -150,7 +150,8 @@ export default {
         return;
       }
 
-      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=200&hidebroken=true&order=clickcount&reverse=true')
+      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=100&countrycode=IT&hidebroken=true&'
+      + 'has_geo_info=true&order=clickcount&reverse=true')
         .then(response => response.json())
         .then(data => {
           this.radios = data;

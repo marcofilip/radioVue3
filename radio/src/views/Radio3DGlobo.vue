@@ -1,8 +1,49 @@
 <template>
-    <div class="globe_container" ref="container"></div>
+    <v-container>
+        <div class="flex-container" style="height: 720px">
+            <div class="empty-space">
+                <v-card v-for="item in radios" :key="item.name">
+                    <v-card-title>
+                        <p><b>{{ item.name }}</b></p>
+                        <p class="stato">{{ item.state }}</p>
+                    </v-card-title>
+                </v-card>
+            </div>
+            <div class="globe_container" ref="container">
+                <div class="floating-label">Muovi il globo e zomma per visualizzare le radio in 3D:</div>
+            </div>
+        </div>
+    </v-container>
 </template>
 
-<style></style>
+<style scoped>
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    height: 100vh;
+    /* Make the container take up the full height of the viewport */
+    overflow: hidden;
+    /* Prevent scrolling */
+}
+
+.empty-space {
+    flex: 1;
+    overflow: auto;
+    /* Add scrolling if the content overflows */
+}
+
+.stato {
+    font-size: 12px;
+}
+
+.globe_container {
+    flex: 1;
+    height: 100vh;
+    /* Make the globe container take up the full height of the viewport */
+    overflow: hidden;
+    /* Prevent scrolling */
+}
+</style>
 
 <script>
 import * as THREE from 'three';
@@ -14,6 +55,7 @@ export default {
     name: 'ThreeJsScene',
     data() {
         return {
+            radios: [],
             camera: null,
             renderer: null,
             controls: null,
@@ -24,6 +66,7 @@ export default {
     },
 
     mounted() {
+        this.getRadios();
         this.init();
         this.animate();
 
@@ -33,7 +76,7 @@ export default {
             radioStations.forEach(station => {
                 if (station.geo_lat && station.geo_long) {
                     this.radios_with_location.push(station);
-                    const marker = this.addMarker(station, 0.02);
+                    const marker = this.addMarker(station, 0.003);
                     this.markers.push(marker);
                 }
             });
@@ -53,18 +96,24 @@ export default {
 
     methods: {
 
+        getRadios() {
+            const radios = localStorage.getItem("radios");
+            this.radios = radios ? JSON.parse(radios) : [];
+        },
+
+
         init() {
+            const container = this.$refs.container;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const aspectRatio = width / height;
 
-            const display_ratio = window.innerWidth / window.innerHeight;
-
-            const width = window.innerWidth / 2;
-            const height = width / display_ratio;
-
-            this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            this.camera = new THREE.PerspectiveCamera(90, aspectRatio, 0.1, 1000);
 
             this.renderer = new THREE.WebGLRenderer();
             this.renderer.setSize(width, height);
-            this.$refs.container.appendChild(this.renderer.domElement);
+            container.appendChild(this.renderer.domElement);
+
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement);
             this.controls.rotateSpeed = 0.5; // Adjust this value to change the rotation speed
