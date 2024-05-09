@@ -1,6 +1,8 @@
 <template>
-    <div ref="container"></div>
+    <div class="globe_container" ref="container"></div>
 </template>
+
+<style></style>
 
 <script>
 import * as THREE from 'three';
@@ -52,11 +54,16 @@ export default {
     methods: {
 
         init() {
-            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.z = 5;
+
+            const display_ratio = window.innerWidth / window.innerHeight;
+
+            const width = window.innerWidth / 2;
+            const height = width / display_ratio;
+
+            this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
 
             this.renderer = new THREE.WebGLRenderer();
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.setSize(width, height);
             this.$refs.container.appendChild(this.renderer.domElement);
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -73,7 +80,6 @@ export default {
             // Create a starry background
             const stargeometry = new THREE.SphereGeometry(this.earthRadius + 100, 8, 8); // Increase segments for smoother surface
             const startexture = new THREE.TextureLoader();
-            startexture.encoding = THREE.LinearEncoding;
             const starmaterial = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
                 color: 0xaaaaaa,
@@ -88,7 +94,6 @@ export default {
             });
             const geometry = new THREE.SphereGeometry(this.earthRadius, 128, 128); // Increase segments for smoother surface
             const texture = new THREE.TextureLoader().load(earthTexture);
-            texture.encoding = THREE.LinearEncoding;
             const material = new THREE.MeshBasicMaterial({ map: texture });
             const earth = new THREE.Mesh(geometry, material);
             scene.add(earth);
