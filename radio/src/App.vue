@@ -1,9 +1,8 @@
 <template>
   <nav>
     <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link> |
-    <router-link to="/contatti">Contatti</router-link> |
-    <router-link to="/radio3d">Radio 3D</router-link>
+    <router-link to="/radio3d">Radio 3D</router-link> |
+    <router-link to="/infoview">Info</router-link>
   </nav>
   <router-view/>
 </template>

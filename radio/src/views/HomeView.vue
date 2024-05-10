@@ -7,23 +7,29 @@
       <v-card class="big-card">
         <v-card-title class="text-center title big-title">
           Radio Player Italia
-          <img src="../../img/italy.png" alt="Italian Flag" class="flag"
+          <img src="../../public/img/italy.png" alt="Italian Flag" class="flag"
             style="width:30px; border: 2px solid white; border-radius: 100%">
         </v-card-title>
       </v-card>
     </v-row>
 
-    <!-- Filtro -->
-    <v-row style="width:800px" align="center" justify="center">
+    <!-- Filtri -->
+    <v-row align="center" justify="center">
       <v-btn-toggle v-model="toggle" divided class="margin">
         <v-btn variant="tonal" class="filter custom-disabled gray-icon" icon="mdi-filter" disabled></v-btn>
         <v-btn variant="tonal" class="filter" icon="mdi-radio" @click="FilterMode('all')"></v-btn>
         <v-btn variant="tonal" class="filter" icon="mdi-heart" @click="FilterMode('favorite')"></v-btn>
       </v-btn-toggle>
 
+      <v-text-field v-model="searchTerm" label="Filtra per nome" single-line hide-details></v-text-field>
+
       <v-combobox clearable v-model="selectedTags" :items="uniqueTags" label="Filtra per tag" multiple
-        @change="ManageTagsFilter" class="margin" style="width:200px" density="comfortable"
+        @change="ManageTagsFilter" class="margin" style="width:200px; padding-top: 23px;"
         placeholder="Scrivi un tag..."></v-combobox>
+
+      <v-combobox clearable v-model="selectedStates" :items="uniqueStates" label="Filtra per stato" multiple
+        @change="ManageStateFilter" class="margin" style="width:200px; padding-top: 23px;"
+        placeholder="Scrivi uno stato..."></v-combobox>
 
     </v-row>
 
@@ -34,12 +40,8 @@
         <v-card class="card d-flex flex-column">
 
           <v-card-title>
-            <b>{{ item.name }}</b>
+            <a :href="item.homepage" target="_blank">{{ item.name }}</a>
           </v-card-title>
-
-          <v-card-text style="font-size: 10px;">
-            <a :href="item.homepage" target="_blank">{{ item.homepage }}</a>
-          </v-card-text>
 
           <v-card-text style="font-size: 10px; margin:0;padding:0">
             {{ item.tags.split(',').slice(0, 5).join(',') }}
@@ -48,7 +50,7 @@
           <v-card-item class="flex-grow-1">
             <img :src="item.favicon" v-if="item.favicon" class="favicon">
             <span v-else>
-              <img :src="require('../../img/defaultradioimage.png')" class="favicon">
+              <img :src="require('../../public/img/defaultradioimage.png')" class="favicon">
             </span>
           </v-card-item>
 
@@ -94,7 +96,7 @@
 
 .favicon {
   width: 150px;
-  border: 5px solid black;
+  border: 2px solid white;
   border-radius: 40px;
   margin: 0;
 }
@@ -135,13 +137,16 @@ export default {
       activeRadio: null,
       favoriteRadios: [],
       tagfilterRadios: [],
+      statefilterRadios: [],
       showFilter: "all",
       selectedTags: [],
+      searchTerm: '',
+      selectedStates: [],
     }
   },
 
   methods: {
-    
+
     getRadios() {
 
       if (localStorage.getItem('radios')) {
@@ -151,7 +156,7 @@ export default {
       }
 
       fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=100&countrycode=IT&hidebroken=true&'
-      + 'has_geo_info=true&order=clickcount&reverse=true')
+        + 'has_geo_info=true&order=clickcount&reverse=true')
         .then(response => response.json())
         .then(data => {
           this.radios = data;
@@ -175,32 +180,46 @@ export default {
     },
 
     PlayAudio(item) {
+      const hls = new Hls();
       const url = item.url;
       const audioFormat = this.getAudioFormat(url);
-      console.log(audioFormat);
 
       if (audioFormat.startsWith('it:8000')) {
         alert("Il formato 'it:8000' non è supportato");
         return;
       }
 
-      else if (audioFormat === 'm3u8') {
-        if (Hls.isSupported()) {
-          var audio = document.getElementById('audioPlayer');
-          var hls = new Hls();
-          hls.loadSource(url);
-          hls.attachMedia(audio);
-          hls.on(Hls.Events.MANIFEST_PARSED, function () { audio.play(); });
-        }
-      }
-
-      else {
-        var code = '<audio id="audioPlayer" controls autoplay style="display:none"><source src="' + url + '" type="audio/mpeg"></audio>'
-        document.getElementById("player").innerHTML = code;
+      if (audioFormat === 'm3u8' && Hls.isSupported()) {
+        this.createHlsPlayer(url, hls);
+      } else {
+        this.createAudioPlayer(url);
       }
 
       this.isPlaying = true;
       this.activeRadio = item.name;
+    },
+
+    createHlsPlayer(url, hls) {
+      let audio = document.getElementById('audioPlayer');
+      if (!audio) {
+        const player = document.getElementById("player");
+        player.innerHTML = `<audio id="audioPlayer" controls style="display:none"></audio>`;
+        audio = document.getElementById('audioPlayer');
+      }
+      hls.loadSource(url);
+      hls.attachMedia(audio);
+      hls.on(Hls.Events.MANIFEST_PARSED, function () {
+        audio.oncanplay = function () {
+          audio.play();
+        };
+      });
+    },
+
+    createAudioPlayer(url) {
+      const player = document.getElementById("player");
+      player.innerHTML = `<audio id="audioPlayer" controls autoplay style="display:none">
+                            <source src="${url}" type="audio/mpeg">
+                        </audio>`;
     },
 
     StopAudio() {
@@ -211,7 +230,7 @@ export default {
       this.activeRadio = null;
     },
 
-    
+
 
     isFavorite(radio) {
       return this.favoriteRadios.some(favRadio => favRadio.name === radio.name);
@@ -236,6 +255,11 @@ export default {
       this.FilterMode('tag');
     },
 
+    FilterByState() {
+      this.statefilterRadios = this.radios.filter(radio => radio.state.includes(this.selectedStates));
+      this.FilterMode('state');
+    },
+
     ManageTagsFilter() {
       if (this.selectedTags.length > 5) {
         this.selectedTags = this.selectedTags.slice(0, 5);
@@ -246,6 +270,20 @@ export default {
       }
       else {
         this.FilterByTag();
+      }
+    },
+
+    ManageStateFilter() {
+      console.log("test!");
+      if (this.selectedStates.length > 5) {
+        this.selectedStates = this.selectedStates.slice(0, 5);
+      }
+      if (this.selectedStates.length == 0) {
+        this.statefilterRadios = [];
+        this.FilterMode('all');
+      }
+      else {
+        this.FilterByState();
       }
     },
 
@@ -264,27 +302,43 @@ export default {
 
   computed: {
     filteredRadios() {
+      let radios = [];
       if (this.showFilter === 'all') {
-        return this.removeDuplicateRadios(this.radios);
+        radios = this.removeDuplicateRadios(this.radios);
       } else if (this.showFilter === 'favorite') {
-        return this.removeDuplicateRadios(this.favoriteRadios);
+        radios = this.removeDuplicateRadios(this.favoriteRadios);
       } else if (this.showFilter === 'tag') {
-        return this.removeDuplicateRadios(this.tagfilterRadios);
-      } else {
-        return [];
+        radios = this.removeDuplicateRadios(this.tagfilterRadios);
+      } else if (this.showFilter === 'state') {
+        radios = this.removeDuplicateRadios(this.statefilterRadios);
       }
+      if (this.searchTerm) {
+        radios = radios.filter(radio => radio.name.toLowerCase().includes(this.searchTerm.toLowerCase()));
+      }
+      return radios;
     },
 
     uniqueTags() {
       const allTags = this.radios.flatMap(radio => radio.tags.split(','));
       return [...new Set(allTags)].sort();
     },
+
+    uniqueStates() {
+      const allTags = this.radios.flatMap(radio => radio.state);
+      return [...new Set(allTags)].sort();
+    }
   },
 
   watch: {
     selectedTags: {
       handler() {
         this.ManageTagsFilter();
+      },
+      deep: true,
+    },
+    selectedStates: {
+      handler() {
+        this.ManageStateFilter();
       },
       deep: true,
     },

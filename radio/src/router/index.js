@@ -8,19 +8,14 @@ const routes = [
     component: HomeView
   },
   {
-    path: '/about',
-    name: 'about',
-    component: () => import('../views/AboutView.vue')
-  },
-  {
-    path: '/contatti',
-    name: 'contatti',
-    component: () => import('../views/ContattiView.vue')
-  },
-  {
     path: '/radio3d',
     name: 'Radio3DGlobo',
     component: () => import('../views/Radio3DGlobo.vue')
+  },
+  {
+    path: '/infoview',
+    name: 'infoview',
+    component: () => import('../views/InfoView.vue')
   }
 ]
 

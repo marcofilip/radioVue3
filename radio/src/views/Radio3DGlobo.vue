@@ -1,13 +1,42 @@
 <template>
     <v-container>
-        <div class="flex-container" style="height: 720px">
+        <div class="flex-container">
             <div class="empty-space">
-                <v-card v-for="item in radios" :key="item.name">
-                    <v-card-title>
-                        <p><b>{{ item.name }}</b></p>
-                        <p class="stato">{{ item.state }}</p>
-                    </v-card-title>
-                </v-card>
+                <v-row v-for="item in radios_with_location" :key="item.name">
+                    <v-col>
+                        <v-card class="d-flex">
+
+                            <v-card-item class="title-container">
+                                <div>
+                                    <a :href="item.homepage" target="_blank" class="title">{{ item.name }}</a>
+                                    <p class="stato">{{ item.state ? item.state : 'Non Specificato' }}</p>
+                                </div>
+                            </v-card-item>
+
+                            <v-card-item class="favicon-container">
+                                <div>
+                                    <img :src="item.favicon" v-if="item.favicon" class="favicon">
+                                    <span v-else>
+                                        <img :src="require('../../public/img/defaultradioimage.png')" class="favicon">
+                                    </span>
+                                </div>
+                            </v-card-item>
+
+                            <v-card-item class="button-container">
+                                <div>
+                                    <v-btn block :color="activeRadio === item.name ? 'red' : 'blue'" variant="tonal"
+                                        @click="activeRadio === item.name ? StopAudio() : PlayAudio(item)"
+                                        class="suona-button">{{
+                                            activeRadio === item.name ?
+                                                'FERMA' : 'SUONA' }}</v-btn>
+                                    <div id="player" style="flex-grow: 1;">
+                                    </div>
+                                </div>
+                            </v-card-item>
+
+                        </v-card>
+                    </v-col>
+                </v-row>
             </div>
             <div class="globe_container" ref="container">
                 <div class="floating-label">Muovi il globo e zomma per visualizzare le radio in 3D:</div>
@@ -19,17 +48,20 @@
 <style scoped>
 .flex-container {
     display: flex;
-    justify-content: space-between;
-    height: 100vh;
-    /* Make the container take up the full height of the viewport */
     overflow: hidden;
-    /* Prevent scrolling */
+    width: 100vw;
+    height: 750px;
 }
 
 .empty-space {
-    flex: 1;
-    overflow: auto;
-    /* Add scrolling if the content overflows */
+    flex: 0.5;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.empty-space,
+.globe_container {
+    height: 100%;
 }
 
 .stato {
@@ -39,17 +71,49 @@
 .globe_container {
     flex: 1;
     height: 100vh;
-    /* Make the globe container take up the full height of the viewport */
     overflow: hidden;
-    /* Prevent scrolling */
+}
+
+.favicon {
+    width: 50px;
+    border: 2px solid white;
+    border-radius: 40px;
+}
+
+.v-btn {
+    margin: 10px;
+}
+
+.title-container {
+    flex: 0 0 50%;
+    /* Adjust this value to your needs */
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.favicon-container {
+    flex: 0 0 20%;
+    /* Adjust this value to your needs */
+}
+
+.button-container {
+    flex: 0 0 30%;
+    margin-left: auto;
+    /* Adjust this value to your needs */
+}
+
+.suona-button {
+    width: 100%;
 }
 </style>
 
 <script>
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import earthTexture from '../../img/globo.jpg';
-import starTexture from '../../img/stelle.jpg';
+import earthTexture from '../../public/img/globo.jpg';
+import starTexture from '../../public/img/stelle.jpg';
+import defaultRadioImage from '../../public/img/defaultradioimage.png';
+const Hls = require('hls.js');
 
 export default {
     name: 'ThreeJsScene',
@@ -62,6 +126,8 @@ export default {
             earthRadius: 1,
             radios_with_location: [],
             markers: [],
+            isPlaying: false,
+            activeRadio: null,
         };
     },
 
@@ -70,20 +136,18 @@ export default {
         this.init();
         this.animate();
 
-        const data = localStorage.getItem('radios');
-        if (data) {
-            const radioStations = JSON.parse(data);
-            radioStations.forEach(station => {
-                if (station.geo_lat && station.geo_long) {
-                    this.radios_with_location.push(station);
-                    const marker = this.addMarker(station, 0.003);
-                    this.markers.push(marker);
-                }
-            });
-        } else {
-            console.error('No radio station data found in localStorage');
-        }
-
+        this.radios.forEach(station => {
+            if (station.geo_lat && station.geo_long) {
+                this.radios_with_location.push(station);
+                var station_texture;
+                if (station.favicon)
+                    station_texture = station.favicon;
+                else
+                    station_texture = defaultRadioImage;
+                this.addMarker(station, 0.005, station_texture);
+            }
+        });
+        this.radios_with_location = this.removeDuplicateRadios(this.radios_with_location);
         console.log("Radios: ", this.radios_with_location);
         console.log("Markers: ", this.markers);
 
@@ -101,28 +165,91 @@ export default {
             this.radios = radios ? JSON.parse(radios) : [];
         },
 
+        getAudioFormat(url) {
+            var extension = url.split('.').pop();
+            return extension;
+        },
+
+        PlayAudio(item) {
+            const hls = new Hls();
+            const url = item.url;
+            const audioFormat = this.getAudioFormat(url);
+
+            if (audioFormat.startsWith('it:8000')) {
+                alert("Il formato 'it:8000' non è supportato");
+                return;
+            }
+
+            if (audioFormat === 'm3u8' && Hls.isSupported()) {
+                this.createHlsPlayer(url, hls);
+            } else {
+                this.createAudioPlayer(url);
+            }
+
+            this.isPlaying = true;
+            this.activeRadio = item.name;
+            this.moveCameraToMarker(item.name);
+        },
+
+        createHlsPlayer(url, hls) {
+            let audio = document.getElementById('audioPlayer');
+            if (!audio) {
+                const player = document.getElementById("player");
+                player.innerHTML = `<audio id="audioPlayer" controls style="display:none"></audio>`;
+                audio = document.getElementById('audioPlayer');
+            }
+            hls.loadSource(url);
+            hls.attachMedia(audio);
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                audio.oncanplay = function () {
+                    audio.play();
+                };
+            });
+        },
+
+        createAudioPlayer(url) {
+            const player = document.getElementById("player");
+            player.innerHTML = `<audio id="audioPlayer" controls autoplay style="display:none">
+                            <source src="${url}" type="audio/mpeg">
+                        </audio>`;
+        },
+
+        StopAudio() {
+            var audio = document.getElementById('audioPlayer');
+            if (audio) { audio.pause(); }
+
+            this.isPlaying = false;
+            this.activeRadio = null;
+        },
+
+        removeDuplicateRadios(radiosarr) {
+            const uniqueRadios = radiosarr.filter((radiosarr, index, self) =>
+                index === self.map(item => item.name).indexOf(radiosarr.name)
+            );
+            return uniqueRadios;
+        },
 
         init() {
             const container = this.$refs.container;
-            const width = container.clientWidth;
-            const height = container.clientHeight;
+            const width = container.clientWidth - 200;
+            const height = container.clientHeight - 200;
             const aspectRatio = width / height;
 
-            this.camera = new THREE.PerspectiveCamera(90, aspectRatio, 0.1, 1000);
+            this.camera = new THREE.PerspectiveCamera(20, aspectRatio, 0.1, 1000);
 
             this.renderer = new THREE.WebGLRenderer();
             this.renderer.setSize(width, height);
             container.appendChild(this.renderer.domElement);
-
+            this.camera.updateProjectionMatrix();
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.rotateSpeed = 0.5; // Adjust this value to change the rotation speed
+            this.controls.rotateSpeed = 0.2; // Adjust this value to change the rotation speed
             this.controls.zoomSpeed = 1; // Adjust this value to change the zoom speed
-            this.controls.panSpeed = 0.5; // Adjust this value to change the panning speed
+            this.controls.panSpeed = 2; // Adjust this value to change the panning speed
 
             this.controls.enableDamping = true;
             this.controls.minDistance = 1.2; // Minimum zoom level
-            this.controls.maxDistance = 3; // Maximum zoom level
+            this.controls.maxDistance = 7; // Maximum zoom level
 
             const scene = new THREE.Scene();
 
@@ -150,33 +277,44 @@ export default {
             this.scene = scene;
         },
 
-        addMarker(radio, markerSize = 0.01) {
+        addMarker(radio, markerSize = 0.05, favicon) {
             const longitude = radio.geo_long;
             const latitude = radio.geo_lat;
 
             if (longitude !== null && latitude !== null) {
-
                 const phi = (90 - latitude) * (Math.PI / 180);
                 const theta = (longitude + 180) * (Math.PI / 180);
-                const x = -this.earthRadius * Math.sin(phi) * Math.cos(theta);
-                const y = this.earthRadius * Math.cos(phi);
-                const z = this.earthRadius * Math.sin(phi) * Math.sin(theta);
+                const offset = 0.0005;
 
-                // Use ConeGeometry to make the marker resemble a pin
-                const geometry = new THREE.ConeGeometry(markerSize, markerSize * 2, 32);
-                const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                const marker = new THREE.Mesh(geometry, material);
-                marker.position.set(x, y, z);
+                var x = -(this.earthRadius + offset) * Math.sin(phi) * Math.cos(theta);
+                var y = (this.earthRadius + offset) * Math.cos(phi);
+                var z = (this.earthRadius + offset) * Math.sin(phi) * Math.sin(theta);
 
-                // Rotate the marker so that the tip points towards the earth
-                marker.lookAt(new THREE.Vector3(0, 0, 0));
+                // Load the favicon and create a sprite
+                const loader = new THREE.TextureLoader();
+                loader.load(
+                    favicon,
+                    (texture) => {
+                        // create a sprite material using the loaded texture
+                        const material = new THREE.SpriteMaterial({ map: texture });
 
-                this.scene.add(marker);
+                        // create a sprite using the material
+                        const marker = new THREE.Sprite(material);
+                        marker.scale.set(markerSize, markerSize, 1); // set the size of the marker
 
-                // Move the camera to the marker's position
-                this.camera.position.set(x, y, z); // Add a small offset in the z direction so the camera isn't inside the marker
-                this.camera.lookAt(new THREE.Vector3(0, 0, 0)); // Make the camera look at the center of the scene
-                return marker;
+                        marker.position.set(x, y, z);
+
+                        // Rotate the marker so that the tip points towards the earth
+                        marker.lookAt(new THREE.Vector3(0, 0, 0));
+
+                        marker.name = radio.name;
+                        this.markers.push(marker);
+                        this.scene.add(marker);
+
+                        // Move the camera to the marker's position
+                        this.camera.position.set(x, y, z); // Add a small offset in the z direction so the camera isn't inside the marker
+                        this.camera.lookAt(new THREE.Vector3(0, 0, 0)); // Make the camera look at the center of the scene
+                    });
 
             } else {
                 console.error('Longitude or latitude is null');
@@ -199,6 +337,14 @@ export default {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
+        },
+
+        moveCameraToMarker(name) {
+            const marker = this.markers.find(marker => marker.name === name);
+            if (marker) {
+                this.camera.position.set(marker.position.x, marker.position.y, marker.position.z);
+                this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+            }
         },
     }
 };
