@@ -86,20 +86,17 @@
 
 .title-container {
     flex: 0 0 50%;
-    /* Adjust this value to your needs */
     white-space: normal;
     word-wrap: break-word;
 }
 
 .favicon-container {
     flex: 0 0 20%;
-    /* Adjust this value to your needs */
 }
 
 .button-container {
     flex: 0 0 30%;
     margin-left: auto;
-    /* Adjust this value to your needs */
 }
 
 .suona-button {
@@ -243,18 +240,17 @@ export default {
             this.camera.updateProjectionMatrix();
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.rotateSpeed = 0.2; // Adjust this value to change the rotation speed
-            this.controls.zoomSpeed = 1; // Adjust this value to change the zoom speed
-            this.controls.panSpeed = 2; // Adjust this value to change the panning speed
+            this.controls.rotateSpeed = 0.014;
+            this.controls.zoomSpeed = 1;
+            this.controls.panSpeed = 2;
 
             this.controls.enableDamping = true;
-            this.controls.minDistance = 1.2; // Minimum zoom level
-            this.controls.maxDistance = 7; // Maximum zoom level
+            this.controls.minDistance = 1.2;
+            this.controls.maxDistance = 7;
 
             const scene = new THREE.Scene();
 
-            // Create a starry background
-            const stargeometry = new THREE.SphereGeometry(this.earthRadius + 100, 8, 8); // Increase segments for smoother surface
+            const stargeometry = new THREE.SphereGeometry(this.earthRadius + 100, 8, 8);
             const startexture = new THREE.TextureLoader();
             const starmaterial = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
@@ -268,7 +264,7 @@ export default {
                 starmaterial.map = texture;
                 this.scene.add(stars);
             });
-            const geometry = new THREE.SphereGeometry(this.earthRadius, 128, 128); // Increase segments for smoother surface
+            const geometry = new THREE.SphereGeometry(this.earthRadius, 128, 128);
             const texture = new THREE.TextureLoader().load(earthTexture);
             const material = new THREE.MeshBasicMaterial({ map: texture });
             const earth = new THREE.Mesh(geometry, material);

@@ -1,87 +1,101 @@
 <template>
+  <v-app>
+    <v-container fluid style="padding-left: 100px; padding-right:100px">
 
-  <v-container fluid style="padding-left: 100px; padding-right:100px">
-
-    <!-- Titolo -->
-    <v-row class="justify-center">
-      <v-card class="big-card">
-        <v-card-title class="text-center title big-title">
-          Radio Player Italia
-          <img src="../../public/img/italy.png" alt="Italian Flag" class="flag"
-            style="width:30px; border: 2px solid white; border-radius: 100%">
-        </v-card-title>
-      </v-card>
-    </v-row>
-
-    <!-- Filtri -->
-    <v-row align="center" justify="center">
-      <v-btn-toggle v-model="toggle" divided class="margin">
-        <v-btn variant="tonal" class="filter custom-disabled gray-icon" icon="mdi-filter" disabled></v-btn>
-        <v-btn variant="tonal" class="filter" icon="mdi-radio" @click="FilterMode('all')"></v-btn>
-        <v-btn variant="tonal" class="filter" icon="mdi-heart" @click="FilterMode('favorite')"></v-btn>
-      </v-btn-toggle>
-
-      <v-text-field v-model="searchTerm" label="Filtra per nome" single-line hide-details></v-text-field>
-
-      <v-combobox clearable v-model="selectedTags" :items="uniqueTags" label="Filtra per tag" multiple
-        @change="ManageTagsFilter" class="margin" style="width:200px; padding-top: 23px;"
-        placeholder="Scrivi un tag..."></v-combobox>
-
-      <v-combobox clearable v-model="selectedStates" :items="uniqueStates" label="Filtra per stato" multiple
-        @change="ManageStateFilter" class="margin" style="width:200px; padding-top: 23px;"
-        placeholder="Scrivi uno stato..."></v-combobox>
-
-    </v-row>
-
-    <!-- Radio -->
-    <v-row>
-
-      <v-col v-for="item in filteredRadios" :key="item.name" cols="12" sm="6" md="4" lg="3" xl="2">
-        <v-card class="card d-flex flex-column">
-
-          <v-card-title>
-            <a :href="item.homepage" target="_blank">{{ item.name }}</a>
+      <!-- Titolo -->
+      <v-row class="justify-center">
+        <v-card class="big-card">
+          <v-card-title class="text-center title big-title">
+            Radio Player Italia
+            <img src="../../public/img/italy.png" alt="Italian Flag" class="flag"
+              style="width:30px; border: 2px solid white; border-radius: 100%">
           </v-card-title>
-
-          <v-card-text style="font-size: 10px; margin:0;padding:0">
-            {{ item.tags.split(',').slice(0, 5).join(',') }}
-          </v-card-text>
-
-          <v-card-item class="flex-grow-1">
-            <img :src="item.favicon" v-if="item.favicon" class="favicon">
-            <span v-else>
-              <img :src="require('../../public/img/defaultradioimage.png')" class="favicon">
-            </span>
-          </v-card-item>
-
-          <v-card-item class="mt-auto">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-
-              <div id="buttonplay" style="flex-grow: 1;">
-                <v-btn block :color="activeRadio === item.name ? 'red' : 'blue'" variant="tonal"
-                  @click="activeRadio === item.name ? StopAudio() : PlayAudio(item)">{{ activeRadio === item.name ?
-                    'FERMA' : 'SUONA' }}</v-btn>
-              </div>
-
-              <div id="favoriteButton" style="flex-grow: 1;">
-                <v-btn block :color="isFavorite(item) ? 'red' : 'gray'" @click="addFavorite(item)">
-                  <v-icon>mdi-heart</v-icon>
-                </v-btn>
-              </div>
-
-              <div id="player" style="flex-grow: 1;">
-                <!-- Here will be the audio player -->
-              </div>
-
-            </div>
-          </v-card-item>
-
         </v-card>
-      </v-col>
+      </v-row>
 
-    </v-row>
+      <!-- Filtri -->
+      <v-row align="center" justify="center">
+        <v-btn-toggle v-model="toggle" divided class="margin">
+          <v-btn variant="tonal" class="filter custom-disabled gray-icon" icon="mdi-filter" disabled></v-btn>
+          <v-btn variant="tonal" class="filter" icon="mdi-radio" @click="FilterMode('all')"></v-btn>
+          <v-btn variant="tonal" class="filter" icon="mdi-heart" @click="FilterMode('favorite')"></v-btn>
+        </v-btn-toggle>
 
-  </v-container>
+        <v-text-field clearable v-model="searchTerm" label="Filtra per nome" single-line hide-details></v-text-field>
+
+        <v-combobox clearable v-model="selectedTags" :items="uniqueTags" label="Filtra per tag" multiple
+          @change="ManageTagsFilter" class="margin" style="width:200px; padding-top: 23px;"
+          placeholder="Scrivi un tag..."></v-combobox>
+
+        <v-combobox clearable v-model="selectedStates" :items="uniqueStates" label="Filtra per stato" multiple
+          @change="ManageStateFilter" class="margin" style="width:200px; padding-top: 23px;"
+          placeholder="Scrivi uno stato..."></v-combobox>
+
+      </v-row>
+
+      <!-- Radio -->
+      <v-row>
+
+        <v-col v-for="item in filteredRadios" :key="item.name" cols="12" sm="6" md="4" lg="3" xl="2">
+          <v-card class="card d-flex flex-column">
+
+            <v-card-title>
+              <a :href="item.homepage" target="_blank" class="radiotitle">{{ item.name }}</a>
+            </v-card-title>
+
+            <v-card-text style="font-size: 10px; margin:0;padding:0">
+              {{ item.tags.split(',').slice(0, 5).join(',') }}
+            </v-card-text>
+
+            <v-card-item class="flex-grow-1">
+              <img :src="item.favicon" v-if="item.favicon" class="favicon">
+              <span v-else>
+                <img :src="require('../../public/img/defaultradioimage.png')" class="favicon">
+              </span>
+            </v-card-item>
+
+            <v-card-item class="mt-auto">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+
+                <div id="buttonplay" style="flex-grow: 1;">
+                  <v-btn block :color="activeRadio === item.name ? 'red' : 'blue'" variant="tonal"
+                    @click="activeRadio === item.name ? StopAudio() : PlayAudio(item)">{{ activeRadio === item.name ?
+                      'FERMA' : 'SUONA' }}</v-btn>
+                </div>
+
+                <div>
+                  <img v-if="loadingRadio == item.name" src="../../public/img/loading.gif" alt="Loading..." class="gif">
+                </div>
+                <div>
+                  <img v-if="activeRadio == item.name && loadingRadio == null" src="../../public/img/playing.gif"
+                    alt="Playing radio" class="gif">
+                </div>
+
+                <v-snackbar v-model="snackbarVisible" color="black" :timeout="5000"
+                  multi-line @change="snackbarVisible = false">
+                  La radio selezionata ci sta mettendo troppo a caricare. Aspetta o prova con un altra.
+                </v-snackbar>
+
+                <div id="favoriteButton" style="flex-grow: 1;">
+                  <v-btn block :color="isFavorite(item) ? 'red' : 'gray'" @click="addFavorite(item)">
+                    <v-icon>mdi-heart</v-icon>
+                  </v-btn>
+                </div>
+
+                <div id="player" style="flex-grow: 1;">
+                  <!-- Here will be the audio player -->
+                </div>
+
+              </div>
+            </v-card-item>
+
+          </v-card>
+        </v-col>
+
+      </v-row>
+
+    </v-container>
+  </v-app>
 </template>
 
 <style scoped>
@@ -101,6 +115,10 @@
   margin: 0;
 }
 
+.v-snackbar {
+  font-family: 'Lexend';
+}
+
 .v-btn {
   margin: 10px;
 }
@@ -108,6 +126,10 @@
 .filter {
   padding: 0;
   margin: 0;
+}
+
+.radiotitle {
+  font-family: 'Share Tech Mono';
 }
 
 .custom-disabled {
@@ -122,6 +144,12 @@
 .big-title {
   font-size: 36px;
 }
+
+.gif {
+  width: 150px;
+  height: 50px;
+  margin: 0;
+}
 </style>
 
 <script>
@@ -133,15 +161,21 @@ export default {
   data() {
     return {
       radios: [],
-      isPlaying: false,
-      activeRadio: null,
+
       favoriteRadios: [],
       tagfilterRadios: [],
       statefilterRadios: [],
-      showFilter: "all",
+
       selectedTags: [],
-      searchTerm: '',
       selectedStates: [],
+
+      isPlaying: false,
+      snackbarVisible: false,
+      loadingRadio: null,
+      activeRadio: null,
+
+      showFilter: "all",
+      searchTerm: '',
     }
   },
 
@@ -180,12 +214,23 @@ export default {
     },
 
     PlayAudio(item) {
+
+      this.loadingRadio = item.name;
+      console.log(this.loadingRadio);
       const hls = new Hls();
       const url = item.url;
       const audioFormat = this.getAudioFormat(url);
 
+      setTimeout(() => {
+        if (this.loadingRadio === item.name) {
+          this.snackbarVisible = true;
+          console.log(this.snackbarVisible);
+        }
+      }, 5000);
+
       if (audioFormat.startsWith('it:8000')) {
         alert("Il formato 'it:8000' non è supportato");
+        this.loadingRadio = null;
         return;
       }
 
@@ -208,9 +253,11 @@ export default {
       }
       hls.loadSource(url);
       hls.attachMedia(audio);
-      hls.on(Hls.Events.MANIFEST_PARSED, function () {
-        audio.oncanplay = function () {
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        audio.oncanplay = () => {
           audio.play();
+          this.loadingRadio = null;
+          console.log(this.loadingRadio);
         };
       });
     },
@@ -218,14 +265,20 @@ export default {
     createAudioPlayer(url) {
       const player = document.getElementById("player");
       player.innerHTML = `<audio id="audioPlayer" controls autoplay style="display:none">
-                            <source src="${url}" type="audio/mpeg">
-                        </audio>`;
+                        <source src="${url}" type="audio/mpeg">
+                      </audio>`;
+      const audio = document.getElementById('audioPlayer');
+      audio.oncanplaythrough = () => {
+        this.loadingRadio = null;
+        console.log(this.loadingRadio);
+      };
     },
 
     StopAudio() {
       var audio = document.getElementById('audioPlayer');
       if (audio) { audio.pause(); }
 
+      this.loadingRadio = null;
       this.isPlaying = false;
       this.activeRadio = null;
     },
