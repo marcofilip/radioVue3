@@ -3,9 +3,9 @@
     <v-container fluid style="padding-left: 100px; padding-right:100px">
 
       <!-- Titolo -->
-      <v-row class="justify-center">
-        <v-card class="big-card">
-          <v-card-title class="text-center title big-title">
+      <v-row class="justify-center" style="margin-top: 0">
+        <v-card>
+          <v-card-title class="text-center big-title">
             Radio Player Italia
             <img src="../../public/img/italy.png" alt="Italian Flag" class="flag"
               style="width:30px; border: 2px solid white; border-radius: 100%">
@@ -14,14 +14,18 @@
       </v-row>
 
       <!-- Filtri -->
-      <v-row align="center" justify="center">
-        <v-btn-toggle v-model="toggle" divided class="margin">
-          <v-btn variant="tonal" class="filter custom-disabled gray-icon" icon="mdi-filter" disabled></v-btn>
+      <v-row align="center" justify="center" class="filterrow">
+        <v-btn variant="tonal" class="filter custom-disabled gray-icon" icon="mdi-filter" disabled></v-btn>
+        <v-btn-toggle v-model="toggle" divided class="margin" style="padding-left: 20px">
           <v-btn variant="tonal" class="filter" icon="mdi-radio" @click="FilterMode('all')"></v-btn>
           <v-btn variant="tonal" class="filter" icon="mdi-heart" @click="FilterMode('favorite')"></v-btn>
         </v-btn-toggle>
 
-        <v-text-field clearable v-model="searchTerm" label="Filtra per nome" single-line hide-details></v-text-field>
+        <v-switch v-model="italyradios" color="green" label="Globale / Italia" hide-details
+          class="margin" style="padding-right: 20px"></v-switch>
+
+        <v-text-field clearable v-model="searchTerm" label="Filtra per nome" single-line hide-details
+          style="width:200px"></v-text-field>
 
         <v-combobox clearable v-model="selectedTags" :items="uniqueTags" label="Filtra per tag" multiple
           @change="ManageTagsFilter" class="margin" style="width:200px; padding-top: 23px;"
@@ -71,8 +75,8 @@
                     alt="Playing radio" class="gif">
                 </div>
 
-                <v-snackbar v-model="snackbarVisible" color="black" :timeout="5000"
-                  multi-line @change="snackbarVisible = false">
+                <v-snackbar v-model="snackbarVisible" color="black" :timeout="5000" multi-line
+                  @change="snackbarVisible = false">
                   La radio selezionata ci sta mettendo troppo a caricare. Aspetta o prova con un altra.
                 </v-snackbar>
 
@@ -105,7 +109,8 @@
 }
 
 .margin {
-  margin: 20px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .favicon {
@@ -126,6 +131,16 @@
 .filter {
   padding: 0;
   margin: 0;
+}
+
+.filterrow {
+  border: 5px solid rgb(36, 36, 36);
+  border-radius: 30px;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-left: 2px;
+  border-right: 2px;
+  margin-top: 25px !important;
 }
 
 .radiotitle {
@@ -171,6 +186,8 @@ export default {
 
       isPlaying: false,
       snackbarVisible: false,
+      italyradios: false,
+
       loadingRadio: null,
       activeRadio: null,
 
@@ -188,8 +205,8 @@ export default {
         console.log(this.radios);
         return;
       }
-
-      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=100&countrycode=IT&hidebroken=true&'
+      //&countrycode=IT
+      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=200&hidebroken=true&'
         + 'has_geo_info=true&order=clickcount&reverse=true')
         .then(response => response.json())
         .then(data => {

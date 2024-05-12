@@ -1,48 +1,56 @@
 <template>
-    <v-container>
-        <div class="flex-container">
-            <div class="empty-space">
-                <v-row v-for="item in radios_with_location" :key="item.name">
-                    <v-col>
-                        <v-card class="d-flex">
+    <v-app>
+        <v-container>
+            <div class="flex-container">
+                <div class="empty-space">
+                    <v-row v-for="item in radios_with_location" :key="item.name">
+                        <v-col>
+                            <v-card class="d-flex">
 
-                            <v-card-item class="title-container">
-                                <div>
-                                    <a :href="item.homepage" target="_blank" class="title">{{ item.name }}</a>
-                                    <p class="stato">{{ item.state ? item.state : 'Non Specificato' }}</p>
-                                </div>
-                            </v-card-item>
-
-                            <v-card-item class="favicon-container">
-                                <div>
-                                    <img :src="item.favicon" v-if="item.favicon" class="favicon">
-                                    <span v-else>
-                                        <img :src="require('../../public/img/defaultradioimage.png')" class="favicon">
-                                    </span>
-                                </div>
-                            </v-card-item>
-
-                            <v-card-item class="button-container">
-                                <div>
-                                    <v-btn block :color="activeRadio === item.name ? 'red' : 'blue'" variant="tonal"
-                                        @click="activeRadio === item.name ? StopAudio() : PlayAudio(item)"
-                                        class="suona-button">{{
-                                            activeRadio === item.name ?
-                                                'FERMA' : 'SUONA' }}</v-btn>
-                                    <div id="player" style="flex-grow: 1;">
+                                <v-card-item class="title-container">
+                                    <div>
+                                        <a :href="item.homepage" target="_blank" class="title">{{ item.name }}</a>
+                                        <p class="stato">{{ item.state ? item.state : 'Non Specificato' }}</p>
                                     </div>
-                                </div>
-                            </v-card-item>
+                                </v-card-item>
 
-                        </v-card>
-                    </v-col>
-                </v-row>
+                                <v-card-item class="favicon-container">
+                                    <div>
+                                        <img :src="item.favicon" v-if="item.favicon" class="favicon">
+                                        <span v-else>
+                                            <img :src="require('../../public/img/defaultradioimage.png')"
+                                                class="favicon">
+                                        </span>
+                                    </div>
+                                </v-card-item>
+
+                                <v-card-item class="button-container">
+                                    <div>
+                                        <v-btn block :color="activeRadio === item.name ? 'red' : 'yellow'"
+                                            variant="tonal"
+                                            @click="activeRadio === item.name ? StopAudio() : PlayAudio(item)"
+                                            class="suona-button">{{
+                                                activeRadio === item.name ?
+                                                    'FERMA' : 'CERCA' }}</v-btn>
+                                        <div id="player" style="flex-grow: 1;">
+                                        </div>
+                                    </div>
+                                </v-card-item>
+
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                </div>
+                <div class="globe_container" ref="container">
+                    <div class="floating-label">Muovi il globo e zomma per visualizzare le radio in 3D:</div>
+                </div>
+
+                <v-snackbar v-model="loading3d" color="black" multi-line>
+                    Radio 3D in caricamento...
+                </v-snackbar>
             </div>
-            <div class="globe_container" ref="container">
-                <div class="floating-label">Muovi il globo e zomma per visualizzare le radio in 3D:</div>
-            </div>
-        </div>
-    </v-container>
+        </v-container>
+    </v-app>
 </template>
 
 <style scoped>
@@ -54,7 +62,7 @@
 }
 
 .empty-space {
-    flex: 0.5;
+    flex: 0.4;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -117,14 +125,15 @@ export default {
     data() {
         return {
             radios: [],
+            radios_with_location: [],
+            markers: [],
             camera: null,
             renderer: null,
             controls: null,
-            earthRadius: 1,
-            radios_with_location: [],
-            markers: [],
-            isPlaying: false,
+            selectedMarker: null,
             activeRadio: null,
+            isPlaying: false,
+            loading3d: false,
         };
     },
 
@@ -141,7 +150,7 @@ export default {
                     station_texture = station.favicon;
                 else
                     station_texture = defaultRadioImage;
-                this.addMarker(station, 0.005, station_texture);
+                this.addMarker(station, 0.02, station_texture);
             }
         });
         this.radios_with_location = this.removeDuplicateRadios(this.radios_with_location);
@@ -227,6 +236,8 @@ export default {
         },
 
         init() {
+            this.loading3d = true;
+            console.log(this.loading3d);
             const container = this.$refs.container;
             const width = container.clientWidth - 200;
             const height = container.clientHeight - 200;
@@ -240,7 +251,7 @@ export default {
             this.camera.updateProjectionMatrix();
 
             this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-            this.controls.rotateSpeed = 0.014;
+            this.controls.rotateSpeed = 0.1;
             this.controls.zoomSpeed = 1;
             this.controls.panSpeed = 2;
 
@@ -250,7 +261,7 @@ export default {
 
             const scene = new THREE.Scene();
 
-            const stargeometry = new THREE.SphereGeometry(this.earthRadius + 100, 8, 8);
+            const stargeometry = new THREE.SphereGeometry(1 + 100, 8, 8);
             const startexture = new THREE.TextureLoader();
             const starmaterial = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
@@ -259,61 +270,73 @@ export default {
                 transparent: true
             });
             const stars = new THREE.Mesh(stargeometry, starmaterial);
-
             startexture.load(starTexture, (texture) => {
                 starmaterial.map = texture;
                 this.scene.add(stars);
             });
-            const geometry = new THREE.SphereGeometry(this.earthRadius, 128, 128);
-            const texture = new THREE.TextureLoader().load(earthTexture);
-            const material = new THREE.MeshBasicMaterial({ map: texture });
+
+            const geometry = new THREE.SphereGeometry(1, 128, 128);
+            const texture = new THREE.TextureLoader();
+            const material = new THREE.MeshBasicMaterial();
             const earth = new THREE.Mesh(geometry, material);
-            scene.add(earth);
+            texture.load(earthTexture, (texture) => {
+                material.map = texture;
+                this.scene.add(earth);
+                this.loading3d = false;
+                console.log(this.loading3d);
+            });
 
             this.scene = scene;
         },
 
-        addMarker(radio, markerSize = 0.05, favicon) {
+        addMarker(radio, markerSize, favicon) {
             const longitude = radio.geo_long;
             const latitude = radio.geo_lat;
-
             if (longitude !== null && latitude !== null) {
                 const phi = (90 - latitude) * (Math.PI / 180);
                 const theta = (longitude + 180) * (Math.PI / 180);
-                const offset = 0.0005;
-
-                var x = -(this.earthRadius + offset) * Math.sin(phi) * Math.cos(theta);
-                var y = (this.earthRadius + offset) * Math.cos(phi);
-                var z = (this.earthRadius + offset) * Math.sin(phi) * Math.sin(theta);
-
-                // Load the favicon and create a sprite
+                var x = -(1 + 0.005) * Math.sin(phi) * Math.cos(theta);
+                var y = (1 + 0.005) * Math.cos(phi);
+                var z = (1 + 0.005) * Math.sin(phi) * Math.sin(theta);
+                var xcam = -(1 + 0.5) * Math.sin(phi) * Math.cos(theta);
+                var ycam = (1 + 0.5) * Math.cos(phi);
+                var zcam = (1 + 0.5) * Math.sin(phi) * Math.sin(theta);
                 const loader = new THREE.TextureLoader();
                 loader.load(
                     favicon,
                     (texture) => {
-                        // create a sprite material using the loaded texture
                         const material = new THREE.SpriteMaterial({ map: texture });
-
-                        // create a sprite using the material
                         const marker = new THREE.Sprite(material);
-                        marker.scale.set(markerSize, markerSize, 1); // set the size of the marker
-
+                        marker.scale.set(markerSize, markerSize, 1);
                         marker.position.set(x, y, z);
-
-                        // Rotate the marker so that the tip points towards the earth
                         marker.lookAt(new THREE.Vector3(0, 0, 0));
-
                         marker.name = radio.name;
                         this.markers.push(marker);
                         this.scene.add(marker);
-
-                        // Move the camera to the marker's position
-                        this.camera.position.set(x, y, z); // Add a small offset in the z direction so the camera isn't inside the marker
-                        this.camera.lookAt(new THREE.Vector3(0, 0, 0)); // Make the camera look at the center of the scene
-                    });
-
-            } else {
-                console.error('Longitude or latitude is null');
+                        this.camera.position.set(xcam, ycam, zcam);
+                        this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+                    },
+                    undefined,
+                    (error) => {
+                        const defaultLoader = new THREE.TextureLoader();
+                        const defaultImageUrl = new URL('../../public/img/defaultradioimage.png', import.meta.url).toString();
+                        defaultLoader.load(
+                            defaultImageUrl,
+                            (defaulttexture) => {
+                                const material = new THREE.SpriteMaterial({ map: defaulttexture });
+                                const marker = new THREE.Sprite(material);
+                                marker.scale.set(markerSize, markerSize, 1);
+                                marker.position.set(x, y, z);
+                                marker.lookAt(new THREE.Vector3(0, 0, 0));
+                                marker.name = radio.name;
+                                this.markers.push(marker);
+                                this.scene.add(marker);
+                                this.camera.position.set(xcam, ycam, zcam);
+                                this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+                            },
+                        );
+                    }
+                );
             }
         },
 
@@ -338,8 +361,13 @@ export default {
         moveCameraToMarker(name) {
             const marker = this.markers.find(marker => marker.name === name);
             if (marker) {
+                if (this.selectedMarker) {
+                    this.selectedMarker.scale.set(0.01, 0.01, 1);
+                }
                 this.camera.position.set(marker.position.x, marker.position.y, marker.position.z);
                 this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+                marker.scale.set(0.04, 0.04, 0.04);
+                this.selectedMarker = marker;
             }
         },
     }
