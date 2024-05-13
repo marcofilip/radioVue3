@@ -234,6 +234,7 @@ export default {
                 this.createAudioPlayer(url);
             }
 
+            this.moveCameraToMarker(item.name);
             this.isPlaying = true;
             this.activeRadio = item.name;
         },
