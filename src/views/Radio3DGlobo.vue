@@ -318,6 +318,7 @@ export default {
                     },
                     undefined,
                     (error) => {
+                        console.error(error);
                         const defaultLoader = new THREE.TextureLoader();
                         const defaultImageUrl = new URL('../../public/img/defaultradioimage.png', import.meta.url).toString();
                         defaultLoader.load(
