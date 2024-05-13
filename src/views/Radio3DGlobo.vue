@@ -1,8 +1,9 @@
 <template>
     <v-app>
         <v-container>
+            <div>Muovi il globo e zomma per visualizzare le radio in 3D:</div>
             <div class="flex-container">
-                <div class="empty-space">
+                <div class="radios-space">
                     <v-row v-for="item in radios_with_location" :key="item.name">
                         <v-col>
                             <v-card class="d-flex">
@@ -24,6 +25,23 @@
                                     </div>
                                 </v-card-item>
 
+                                <v-card-item class="gif-container">
+                                    <div>
+                                        <img v-if="loadingRadio == item.name" src="../../public/img/loading.gif"
+                                            alt="Loading..." class="gif">
+                                    </div>
+                                    <div>
+                                        <img v-if="activeRadio == item.name && loadingRadio == null"
+                                            src="../../public/img/playing.gif" alt="Playing radio" class="gif">
+                                    </div>
+                                </v-card-item>
+
+                                <v-snackbar v-model="snackbarVisible" color="black" :timeout="5000" multi-line
+                                    @change="snackbarVisible = false">
+                                    La radio selezionata ci sta mettendo troppo a caricare. Aspetta o prova con un
+                                    altra.
+                                </v-snackbar>
+
                                 <v-card-item class="button-container">
                                     <div>
                                         <v-btn block :color="activeRadio === item.name ? 'red' : 'yellow'"
@@ -42,7 +60,6 @@
                     </v-row>
                 </div>
                 <div class="globe_container" ref="container">
-                    <div class="floating-label">Muovi il globo e zomma per visualizzare le radio in 3D:</div>
                 </div>
 
                 <v-snackbar v-model="loading3d" color="black" multi-line>
@@ -56,30 +73,46 @@
 <style scoped>
 .flex-container {
     display: flex;
-    overflow: hidden;
-    width: 100vw;
-    height: 750px;
+    height: 75vh;
 }
 
-.empty-space {
-    flex: 0.4;
+.v-card-item.gif-container {
+    flex: 0.5; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.button-container {
+    flex: 1.5; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.radios-space {
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-right: 20px;
 }
 
-.empty-space,
 .globe_container {
-    height: 100%;
+    flex: 1.5;
 }
 
 .stato {
     font-size: 12px;
 }
 
-.globe_container {
-    flex: 1;
-    height: 100vh;
-    overflow: hidden;
+.gif {
+    width: 50px;
+    height: 50px;
+    margin: 0;
 }
 
 .favicon {
@@ -93,7 +126,7 @@
 }
 
 .title-container {
-    flex: 0 0 50%;
+    flex: 0 0 40%;
     white-space: normal;
     word-wrap: break-word;
 }
@@ -102,10 +135,6 @@
     flex: 0 0 20%;
 }
 
-.button-container {
-    flex: 0 0 30%;
-    margin-left: auto;
-}
 
 .suona-button {
     width: 100%;
@@ -134,6 +163,8 @@ export default {
             activeRadio: null,
             isPlaying: false,
             loading3d: false,
+            loadingRadio: null,
+            snackbarVisible: false,
         };
     },
 
@@ -177,12 +208,23 @@ export default {
         },
 
         PlayAudio(item) {
+
+            this.loadingRadio = item.name;
+            console.log(this.loadingRadio);
             const hls = new Hls();
             const url = item.url;
             const audioFormat = this.getAudioFormat(url);
 
+            setTimeout(() => {
+                if (this.loadingRadio === item.name) {
+                    this.snackbarVisible = true;
+                    console.log(this.snackbarVisible);
+                }
+            }, 5000);
+
             if (audioFormat.startsWith('it:8000')) {
                 alert("Il formato 'it:8000' non è supportato");
+                this.loadingRadio = null;
                 return;
             }
 
@@ -194,7 +236,6 @@ export default {
 
             this.isPlaying = true;
             this.activeRadio = item.name;
-            this.moveCameraToMarker(item.name);
         },
 
         createHlsPlayer(url, hls) {
@@ -206,9 +247,11 @@ export default {
             }
             hls.loadSource(url);
             hls.attachMedia(audio);
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                audio.oncanplay = function () {
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                audio.oncanplay = () => {
                     audio.play();
+                    this.loadingRadio = null;
+                    console.log(this.loadingRadio);
                 };
             });
         },
@@ -216,14 +259,20 @@ export default {
         createAudioPlayer(url) {
             const player = document.getElementById("player");
             player.innerHTML = `<audio id="audioPlayer" controls autoplay style="display:none">
-                            <source src="${url}" type="audio/mpeg">
-                        </audio>`;
+                  <source src="${url}" type="audio/mpeg">
+                </audio>`;
+            const audio = document.getElementById('audioPlayer');
+            audio.oncanplaythrough = () => {
+                this.loadingRadio = null;
+                console.log(this.loadingRadio);
+            };
         },
 
         StopAudio() {
             var audio = document.getElementById('audioPlayer');
             if (audio) { audio.pause(); }
 
+            this.loadingRadio = null;
             this.isPlaying = false;
             this.activeRadio = null;
         },
@@ -239,8 +288,8 @@ export default {
             this.loading3d = true;
             console.log(this.loading3d);
             const container = this.$refs.container;
-            const width = container.clientWidth - 200;
-            const height = container.clientHeight - 200;
+            const width = container.clientWidth - 0;
+            const height = container.clientHeight - 0;
             const aspectRatio = width / height;
 
             this.camera = new THREE.PerspectiveCamera(20, aspectRatio, 0.1, 1000);
@@ -365,9 +414,10 @@ export default {
                 if (this.selectedMarker) {
                     this.selectedMarker.scale.set(0.01, 0.01, 1);
                 }
-                this.camera.position.set(marker.position.x, marker.position.y, marker.position.z);
+                const scaleFactor = 2;
+                this.camera.position.set(marker.position.x * scaleFactor, marker.position.y * scaleFactor, marker.position.z * scaleFactor);
                 this.camera.lookAt(new THREE.Vector3(0, 0, 0));
-                marker.scale.set(0.04, 0.04, 0.04);
+                marker.scale.set(0.06, 0.06, 0.06);
                 this.selectedMarker = marker;
             }
         },

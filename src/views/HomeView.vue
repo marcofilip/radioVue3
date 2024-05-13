@@ -21,14 +21,14 @@
           <v-btn variant="tonal" class="filter" icon="mdi-heart" @click="FilterMode('favorite')"></v-btn>
         </v-btn-toggle>
 
-        <v-switch v-model="italyradios" color="green" label="Globale / Italia" hide-details
-          class="margin" style="padding-right: 20px"></v-switch>
+        <v-switch v-model="italyradios" color="green" label="Globale / Italia" hide-details class="margin"
+          style="padding-right: 20px" @change="handleItalyRadios"></v-switch>
 
         <v-text-field clearable v-model="searchTerm" label="Filtra per nome" single-line hide-details
           style="width:200px"></v-text-field>
 
         <v-combobox clearable v-model="selectedTags" :items="uniqueTags" label="Filtra per tag" multiple
-          @change="ManageTagsFilter" class="margin" style="width:200px; padding-top: 23px;"
+          @change="ManageTagsFilter" class="margin" style="width:200px; padding-left:15px; padding-top: 23px;"
           placeholder="Scrivi un tag..."></v-combobox>
 
         <v-combobox clearable v-model="selectedStates" :items="uniqueStates" label="Filtra per stato" multiple
@@ -81,13 +81,13 @@
                 </v-snackbar>
 
                 <div id="favoriteButton" style="flex-grow: 1;">
-                  <v-btn block :color="isFavorite(item) ? 'red' : 'gray'" @click="addFavorite(item)">
+                  <v-btn v-if="activeRadio != item.name" block :color="isFavorite(item) ? 'red' : 'gray'"
+                    @click="addFavorite(item)">
                     <v-icon>mdi-heart</v-icon>
                   </v-btn>
                 </div>
 
                 <div id="player" style="flex-grow: 1;">
-                  <!-- Here will be the audio player -->
                 </div>
 
               </div>
@@ -205,9 +205,15 @@ export default {
         console.log(this.radios);
         return;
       }
-      //&countrycode=IT
-      fetch('https://nl1.api.radio-browser.info/json/stations/search?limit=200&hidebroken=true&'
-        + 'has_geo_info=true&order=clickcount&reverse=true')
+      var url;
+      if (this.italyradios)
+        url = 'https://nl1.api.radio-browser.info/json/stations/search?limit=250&countrycode=IT&hidebroken=true&'
+          + 'has_geo_info=true&order=clickcount&reverse=true';
+      else
+        url = 'https://nl1.api.radio-browser.info/json/stations/search?limit=250&hidebroken=true&'
+          + 'has_geo_info=true&order=clickcount&reverse=true'
+
+      fetch(url)
         .then(response => response.json())
         .then(data => {
           this.radios = data;
@@ -300,7 +306,15 @@ export default {
       this.activeRadio = null;
     },
 
+    handleItalyRadios() {
+      localStorage.setItem('italyradios', this.italyradios);
+      localStorage.removeItem('radios');
+      location.reload();
+    },
 
+    checkitalyradios() {
+      this.italyradios = localStorage.getItem('italyradios') === 'true' ? true : false;
+    },
 
     isFavorite(radio) {
       return this.favoriteRadios.some(favRadio => favRadio.name === radio.name);
@@ -367,6 +381,8 @@ export default {
   },
 
   created() {
+    this.checkitalyradios();
+    console.log(this.italyradios);
     this.getRadios();
   },
 
